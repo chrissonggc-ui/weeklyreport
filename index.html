@@ -45,6 +45,8 @@
         .css-icon-solution { background: #f0fdf4; color: #16a34a; }
         .css-icon-progress { background: #eff6ff; color: #2563eb; }
         .css-icon-plan { background: #faf5ff; color: #9333ea; }
+        /* Per-task toggle: hide issue/solution rows within a task */
+        .task-hide-issues .row-issue-solution { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans text-gray-800 relative">
@@ -88,10 +90,13 @@
 
             <div class="grid grid-cols-1 gap-8">
                 <!-- Task 1 -->
-                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden">
-                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center">
-                        <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">1</div>
-                        <h2 class="text-lg font-bold text-gray-800">任务一：基于流程搭建知识骨骼</h2>
+                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden" id="task-1">
+                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">1</div>
+                            <h2 class="text-lg font-bold text-gray-800">任务一：基于流程搭建知识骨骼</h2>
+                        </div>
+                        <button onclick="toggleTaskIssue('task-1', this)" class="text-xs text-gray-500 hover:text-red-600 bg-white border border-gray-200 px-2.5 py-1 rounded transition-colors hide-on-capture shrink-0 ml-3">隐藏问题/方案</button>
                     </div>
                     <div class="p-5 space-y-4">
                         <div class="flex flex-col md:flex-row gap-4">
@@ -101,14 +106,14 @@
                             </div>
                             <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-600 outline-none p-1 focus:bg-gray-50 rounded">建立各领域的知识框架体系，看清知识全貌，在此基础上，从核心场景知识开始，逐步完成全域知识的梳理。以业务流程为核心确定框架，分阶段完成核心场景知识全貌盘点与梳理。</div>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 row-issue-solution">
                             <div class="w-full md:w-1/6 font-semibold text-red-600 text-sm flex items-start pt-1 shrink-0">
                                 <span class="css-icon css-icon-issue">!</span>
                                 存在问题
                             </div>
                             <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">制造，人资已经按照流程为主线构建知识体系，研发，财经，服务，营销，供应链领域均进行了知识盘点工作，但主线尚不清晰，且未进行专家评审。</div>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 row-issue-solution">
                             <div class="w-full md:w-1/6 font-semibold text-green-600 text-sm flex items-start pt-1 shrink-0">
                                 <span class="css-icon css-icon-solution">&#10003;</span>
                                 解决方案
@@ -133,10 +138,13 @@
                 </div>
 
                 <!-- Task 2 -->
-                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden">
-                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center">
-                        <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">2</div>
-                        <h2 class="text-lg font-bold text-gray-800">任务二：知识治理与入库</h2>
+                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden" id="task-2">
+                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">2</div>
+                            <h2 class="text-lg font-bold text-gray-800">任务二：知识治理与入库</h2>
+                        </div>
+                        <button onclick="toggleTaskIssue('task-2', this)" class="text-xs text-gray-500 hover:text-red-600 bg-white border border-gray-200 px-2.5 py-1 rounded transition-colors hide-on-capture shrink-0 ml-3">隐藏问题/方案</button>
                     </div>
                     <div class="p-5 space-y-4">
                         <div class="flex flex-col md:flex-row gap-4">
@@ -146,14 +154,14 @@
                             </div>
                             <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-600 outline-none p-1 focus:bg-gray-50 rounded">明确知识载体、来源、贡献者及入库途径，保障增量与存量高质量入库。建立知识与知识载体的强映射关系。</div>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 row-issue-solution">
                             <div class="w-full md:w-1/6 font-semibold text-red-600 text-sm flex items-start pt-1 shrink-0">
                                 <span class="css-icon css-icon-issue">!</span>
                                 存在问题
                             </div>
                             <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">因知识体系缺失，各领域知识清单无法判断其完整性和覆盖情况。同时，目前已经入库的知识虽然在线下收集过程中把知识和文档进行了关联，但执行层包括星海知识库都把工作重心放到了文档归集入库上，也没有系统的建立知识和知识载体的对应关系。</div>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 row-issue-solution">
                             <div class="w-full md:w-1/6 font-semibold text-green-600 text-sm flex items-start pt-1 shrink-0">
                                 <span class="css-icon css-icon-solution">&#10003;</span>
                                 解决方案
@@ -281,10 +289,13 @@
                 </div>
 
                 <!-- Task 3 -->
-                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden">
-                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center">
-                        <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">3</div>
-                        <h2 class="text-lg font-bold text-gray-800">任务三：构建图谱语义层</h2>
+                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden" id="task-3">
+                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">3</div>
+                            <h2 class="text-lg font-bold text-gray-800">任务三：构建图谱语义层</h2>
+                        </div>
+                        <button onclick="toggleTaskIssue('task-3', this)" class="text-xs text-gray-500 hover:text-red-600 bg-white border border-gray-200 px-2.5 py-1 rounded transition-colors hide-on-capture shrink-0 ml-3">隐藏问题/方案</button>
                     </div>
                     <div class="p-5 space-y-4">
                         <div class="flex flex-col md:flex-row gap-4">
@@ -294,14 +305,14 @@
                             </div>
                             <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-600 outline-none p-1 focus:bg-gray-50 rounded">针对智能体需求场景，设计业务本体，建立实体-关系-实体联系，打通多源知识，解决大模型幻觉与检索不准问题，赋能AI应用。</div>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 row-issue-solution">
                             <div class="w-full md:w-1/6 font-semibold text-red-600 text-sm flex items-start pt-1 shrink-0">
                                 <span class="css-icon css-icon-issue">!</span>
                                 存在问题
                             </div>
                             <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">此前各领域都输出了一版三元组清单，但因总体组对图谱概念模型的认知和应用能力不够。是近期跟AC重点辅导学习的地方。4月底要重新更新整套体系方法。</div>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 row-issue-solution">
                             <div class="w-full md:w-1/6 font-semibold text-green-600 text-sm flex items-start pt-1 shrink-0">
                                 <span class="css-icon css-icon-solution">&#10003;</span>
                                 解决方案
@@ -331,10 +342,13 @@
                 </div>
 
                 <!-- Task 4 -->
-                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden">
-                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center">
-                        <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">4</div>
-                        <h2 class="text-lg font-bold text-gray-800">任务四：常态化运营与组织运营（需求清单排期）</h2>
+                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden" id="task-4">
+                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">4</div>
+                            <h2 class="text-lg font-bold text-gray-800">任务四：常态化运营与组织运营（需求清单排期）</h2>
+                        </div>
+                        <button onclick="toggleTaskIssue('task-4', this)" class="text-xs text-gray-500 hover:text-red-600 bg-white border border-gray-200 px-2.5 py-1 rounded transition-colors hide-on-capture shrink-0 ml-3">隐藏问题/方案</button>
                     </div>
                     <div class="p-5 space-y-6">
                         <div class="flex flex-col md:flex-row gap-4 px-5 pt-4">
@@ -344,14 +358,14 @@
                             </div>
                             <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-600 outline-none p-1 focus:bg-gray-50 rounded">建立可落地的长期运营机制，避免知识体系建成后无人维护、内容过时，保证体系能跟随业务发展与AI应用需求持续优化，长期可用、持续产生价值。</div>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 px-5">
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 px-5 row-issue-solution">
                             <div class="w-full md:w-1/6 font-semibold text-red-600 text-sm flex items-start pt-1 shrink-0">
                                 <span class="css-icon css-icon-issue">!</span>
                                 存在问题
                             </div>
                             <div contenteditable="true" placeholder="运营中发现的问题..." class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">在此填写存在问题...</div>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 px-5">
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 px-5 row-issue-solution">
                             <div class="w-full md:w-1/6 font-semibold text-green-600 text-sm flex items-start pt-1 shrink-0">
                                 <span class="css-icon css-icon-solution">&#10003;</span>
                                 解决方案
@@ -521,6 +535,14 @@
     }
 
     function toggleDataEditor() { document.getElementById('chart-data-editor').classList.toggle('hidden'); }
+
+    function toggleTaskIssue(taskId, btn) {
+        const task = document.getElementById(taskId);
+        if (!task) return;
+        const isHidden = task.classList.toggle('task-hide-issues');
+        btn.innerText = isHidden ? '显示问题/方案' : '隐藏问题/方案';
+        triggerSaveState();
+    }
 
     function updateChartsFromTable() {
         const updateChart = (chartInstance, tableId) => {
