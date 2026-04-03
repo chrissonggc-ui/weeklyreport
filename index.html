@@ -1,0 +1,734 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集团知识治理项目周报</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.snow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#115e59', primary_light: '#14b8a6', secondary: '#0f766e', bg_light: '#f0fdfa', warning: '#ef4444' } } }
+        }
+    </script>
+    <style>
+        [contenteditable=true]:empty:before { content: attr(placeholder); color: #9ca3af; pointer-events: none; display: block; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body.is-capturing { overflow: hidden !important; background: #ffffff !important; }
+        .is-capturing, .is-capturing * { animation: none !important; transition: none !important; transform: none !important; }
+        .is-capturing #action-bar, .is-capturing .hide-on-capture { display: none !important; }
+        .is-capturing .pt-20 { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+        .is-capturing [contenteditable=true] { border-color: transparent !important; background: transparent !important; outline: none !important; }
+        .is-capturing .shadow-sm, .is-capturing .shadow-md, .is-capturing .shadow-lg { box-shadow: none !important; border: 1px solid #e2e8f0; }
+        .is-capturing .overflow-x-auto { overflow: visible !important; }
+        .is-capturing canvas { opacity: 0 !important; }
+        [contenteditable=true]:hover { background-color: #f8fafc; border-radius: 0.25rem; box-shadow: 0 0 0 1px #e2e8f0; transition: all 0.2s; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; font-size: 0.875rem; position: relative; }
+        th { background-color: #f8fafc; color: #334155; font-weight: 600; }
+        [contenteditable=true] ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin: 0.25rem 0; }
+        [contenteditable=true] ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin: 0.25rem 0; }
+        [contenteditable=true] b, [contenteditable=true] strong { font-weight: 700 !important; }
+        td.cell-selected, th.cell-selected { outline: 2px solid #14b8a6; outline-offset: -2px; }
+        .solid-badge { display: inline-block; text-align: center; vertical-align: middle; white-space: nowrap; line-height: normal; }
+        /* Icon replacement: use inline styled spans instead of SVG for html2canvas compatibility */
+        .css-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; min-width: 16px; border-radius: 50%; font-size: 10px; font-style: normal; font-weight: bold; flex-shrink: 0; margin-right: 4px; margin-top: 2px; line-height: 1; }
+        .css-icon-sm { width: 14px; height: 14px; min-width: 14px; font-size: 9px; margin-top: 1px; margin-right: 3px; }
+        .css-icon-bg { background: #ccfbf1; color: #115e59; }
+        .css-icon-issue { background: #fef2f2; color: #dc2626; }
+        .css-icon-solution { background: #f0fdf4; color: #16a34a; }
+        .css-icon-progress { background: #eff6ff; color: #2563eb; }
+        .css-icon-plan { background: #faf5ff; color: #9333ea; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800 relative">
+
+    <!-- Action Bar -->
+    <div id="action-bar" class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50 flex justify-between items-center px-6 py-3">
+        <div class="flex items-center space-x-2">
+            <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span class="font-semibold text-lg text-primary">知识管理周报工作台</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span id="save-status" class="text-xs font-medium text-gray-400 transition-opacity duration-300">内容已自动保存</span>
+            <button onclick="clearCache()" class="text-gray-500 hover:text-red-500 text-xs px-2 py-1 underline transition-colors">清除重置</button>
+            <button onclick="captureReport()" class="flex items-center bg-primary hover:bg-teal-900 text-white px-5 py-2.5 rounded-md text-sm font-bold transition-colors shadow-md hover:shadow-lg focus:outline-none">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                一键生成报告长图
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="pt-20 pb-12 px-4 sm:px-6 lg:px-8 overflow-x-auto">
+        <div id="report-capture-area" class="w-full max-w-6xl min-w-[1200px] mx-auto bg-white shadow-lg rounded-xl p-8 sm:p-10 border border-gray-200">
+
+            <!-- Header -->
+            <div class="border-b-4 border-primary pb-6 mb-8 relative">
+                <h1 class="text-3xl font-bold text-gray-800 mb-3 text-center tracking-wide">
+                    集团知识治理项目周报（<span contenteditable="true" class="outline-none">20260330-20260403</span>）
+                    <span class="text-warning ml-2">【预警】</span>
+                </h1>
+                <div class="mt-6 flex flex-col md:flex-row gap-4 items-stretch">
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 w-full md:w-1/4 rounded-r-lg text-center flex flex-col justify-center items-center">
+                        <span class="text-red-800 font-bold text-lg mb-2 block">当前项目状态</span>
+                        <span class="bg-red-500 text-white px-6 py-2 rounded-full font-bold shadow-sm solid-badge animate-pulse capture-remove-pulse" style="font-size: 16px;">预 警</span>
+                    </div>
+                    <div class="bg-bg_light p-4 rounded-lg border border-teal-100 text-sm text-gray-700 leading-relaxed w-full md:w-3/4">
+                        <div contenteditable="true" class="outline-none focus:bg-white p-1 rounded"><strong>2026年知识治理背景：</strong>2026年知识治理工作基于知识组 2025 年沉淀，结合与 AC 合作引入的行业知识治理最佳实践构建，核心通过体系化建设牵引知识治理落地，以本体语义层筑牢知识精准召回能力，配套长效运营机制，为跨领域协同、流程重构等高阶智能体落地提供底层知识支撑。以下内容将围绕四大核心任务、两大核心成功因素展开详述。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-8">
+                <!-- Task 1 -->
+                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden">
+                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center">
+                        <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">1</div>
+                        <h2 class="text-lg font-bold text-gray-800">任务一：基于流程搭建知识骨骼</h2>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div class="w-full md:w-1/6 font-semibold text-primary text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-bg">i</span>
+                                任务背景
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-600 outline-none p-1 focus:bg-gray-50 rounded">建立各领域的知识框架体系，看清知识全貌，在此基础上，从核心场景知识开始，逐步完成全域知识的梳理。以业务流程为核心确定框架，分阶段完成核心场景知识全貌盘点与梳理。</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-red-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-issue">!</span>
+                                存在问题
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">制造，人资已经按照流程为主线构建知识体系，研发，财经，服务，营销，供应链领域均进行了知识盘点工作，但主线尚不清晰，且未进行专家评审。</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-green-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-solution">&#10003;</span>
+                                解决方案
+                            </div>
+                            <div contenteditable="true" placeholder="针对上述问题的解决方案..." class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded bg-green-50/30">在此填写针对遗留问题的解决方案...</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-blue-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-progress">&#8599;</span>
+                                本周进展
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">以营销域为试点，结合自身业务流程或价值流，完成本领域的知识体系设计。</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-purple-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-plan">&#9632;</span>
+                                下周计划
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">输出集团知识体系识别方法与登记模板，并输出营销域知识体系框架，并进行专家评审。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task 2 -->
+                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden">
+                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center">
+                        <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">2</div>
+                        <h2 class="text-lg font-bold text-gray-800">任务二：知识治理与入库</h2>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div class="w-full md:w-1/6 font-semibold text-primary text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-bg">i</span>
+                                任务背景
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-600 outline-none p-1 focus:bg-gray-50 rounded">明确知识载体、来源、贡献者及入库途径，保障增量与存量高质量入库。建立知识与知识载体的强映射关系。</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-red-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-issue">!</span>
+                                存在问题
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">因知识体系缺失，各领域知识清单无法判断其完整性和覆盖情况。同时，目前已经入库的知识虽然在线下收集过程中把知识和文档进行了关联，但执行层包括星海知识库都把工作重心放到了文档归集入库上，也没有系统的建立知识和知识载体的对应关系。</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-green-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-solution">&#10003;</span>
+                                解决方案
+                            </div>
+                            <div contenteditable="true" placeholder="针对上述问题的解决方案..." class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded bg-green-50/30">请在此填写针对遗留问题的解决方案...</div>
+                        </div>
+                        <!-- Progress with stats and charts -->
+                        <div class="flex flex-col gap-2 border-t border-gray-100 pt-3">
+                            <div class="font-semibold text-blue-600 text-sm flex items-start pt-1">
+                                <span class="css-icon css-icon-progress">&#8599;</span>
+                                本周进展：各领域及事业部知识体系与入库全景概览
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                                <div class="bg-gray-50 border border-gray-200 p-3 rounded text-center">
+                                    <div class="text-xs text-gray-500 mb-1">系统总入库量</div>
+                                    <div class="text-2xl font-bold text-primary"><span contenteditable="true" class="outline-none">48,451</span> <span class="text-sm font-normal text-gray-400">份</span></div>
+                                </div>
+                                <div class="bg-gray-50 border border-gray-200 p-3 rounded text-center">
+                                    <div class="text-xs text-gray-500 mb-1">本周新增梳理</div>
+                                    <div class="text-2xl font-bold text-teal-600"><span contenteditable="true" class="outline-none">+1,591</span> <span class="text-sm font-normal text-gray-400">份</span></div>
+                                </div>
+                                <div class="bg-gray-50 border border-gray-200 p-3 rounded text-center">
+                                    <div class="text-xs text-gray-500 mb-1">覆盖事业部/公司</div>
+                                    <div class="text-2xl font-bold text-gray-800"><span contenteditable="true" class="outline-none">39</span> <span class="text-sm font-normal text-gray-400">个</span></div>
+                                </div>
+                                <div class="bg-gray-50 border border-gray-200 p-3 rounded text-center">
+                                    <div class="text-xs text-gray-500 mb-1">已建立知识库类别</div>
+                                    <div class="text-2xl font-bold text-amber-600"><span contenteditable="true" class="outline-none">17</span> <span class="text-sm font-normal text-gray-400">类</span></div>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-end hide-on-capture">
+                                <button onclick="toggleDataEditor()" class="flex items-center text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded border border-blue-100 transition-colors shadow-sm">
+                                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    点击配置底层图表数据源
+                                </button>
+                            </div>
+
+                            <!-- Chart Data Editor -->
+                            <div id="chart-data-editor" class="hidden hide-on-capture bg-gray-50 p-4 rounded border border-gray-200 mt-2 text-sm shadow-inner">
+                                <p class="text-xs text-gray-500 mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-1 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <b>💡 Excel一键粘贴：</b>在Excel中框选两列数据，点击下方表格的任意起始单元格，按下 <span class="text-primary font-bold mx-1">Ctrl+V</span>，图表将瞬间刷新！
+                                </p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">图表一：领域知识库分布</h4>
+                                        <table id="bar-data-table" class="w-full text-xs bg-white text-center">
+                                            <thead class="bg-gray-100"><tr><th class="p-1.5 border">领域名称</th><th class="p-1.5 border">知识数量</th></tr></thead>
+                                            <tbody>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">产品知识库</td><td contenteditable="true" class="p-1.5 border outline-none">23831</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">人资知识库</td><td contenteditable="true" class="p-1.5 border outline-none">6473</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">制造知识库</td><td contenteditable="true" class="p-1.5 border outline-none">5437</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">研发知识库</td><td contenteditable="true" class="p-1.5 border outline-none">4153</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">Global Product</td><td contenteditable="true" class="p-1.5 border outline-none">3211</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">Global Service</td><td contenteditable="true" class="p-1.5 border outline-none">2035</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">数质中心IT产品</td><td contenteditable="true" class="p-1.5 border outline-none">1126</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">图表二：集团知识贡献 (TOP 5)</h4>
+                                        <table id="bar-group-data-table" class="w-full text-xs bg-white text-center">
+                                            <thead class="bg-gray-100"><tr><th class="p-1.5 border">部门</th><th class="p-1.5 border">贡献数量</th></tr></thead>
+                                            <tbody>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">人资行政中心</td><td contenteditable="true" class="p-1.5 border outline-none">9566</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">数质中心</td><td contenteditable="true" class="p-1.5 border outline-none">7084</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">海信时代</td><td contenteditable="true" class="p-1.5 border outline-none">5605</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">全球营销中心</td><td contenteditable="true" class="p-1.5 border outline-none">5070</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">PLM</td><td contenteditable="true" class="p-1.5 border outline-none">865</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">图表三：ToB事业部知识贡献 (TOP 5)</h4>
+                                        <table id="bar-2b-data-table" class="w-full text-xs bg-white text-center">
+                                            <thead class="bg-gray-100"><tr><th class="p-1.5 border">部门</th><th class="p-1.5 border">贡献数量</th></tr></thead>
+                                            <tbody>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">海信日立</td><td contenteditable="true" class="p-1.5 border outline-none">15317</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">商用空调事业部</td><td contenteditable="true" class="p-1.5 border outline-none">2752</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">智慧楼宇事业部</td><td contenteditable="true" class="p-1.5 border outline-none">1029</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">乾照光电</td><td contenteditable="true" class="p-1.5 border outline-none">708</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">医疗设备公司</td><td contenteditable="true" class="p-1.5 border outline-none">541</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">图表四：ToC事业部知识贡献 (TOP 5)</h4>
+                                        <table id="bar-2c-data-table" class="w-full text-xs bg-white text-center">
+                                            <thead class="bg-gray-100"><tr><th class="p-1.5 border">部门</th><th class="p-1.5 border">贡献数量</th></tr></thead>
+                                            <tbody>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">冰冷事业部</td><td contenteditable="true" class="p-1.5 border outline-none">4490</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">显示事业部</td><td contenteditable="true" class="p-1.5 border outline-none">4213</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">空气事业部</td><td contenteditable="true" class="p-1.5 border outline-none">3767</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">洗护事业部</td><td contenteditable="true" class="p-1.5 border outline-none">2529</td></tr>
+                                                <tr><td contenteditable="true" class="p-1.5 border outline-none">ASKO事业部</td><td contenteditable="true" class="p-1.5 border outline-none">305</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Charts -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                <div class="border border-gray-200 rounded p-2 relative bg-white shadow-sm">
+                                    <div id="chart-bar" style="width: 100%; height: 260px;"></div>
+                                </div>
+                                <div class="border border-gray-200 rounded p-2 relative bg-white shadow-sm">
+                                    <div id="chart-bar-group" style="width: 100%; height: 260px;"></div>
+                                </div>
+                                <div class="border border-gray-200 rounded p-2 relative bg-white shadow-sm">
+                                    <div id="chart-bar-2b" style="width: 100%; height: 260px;"></div>
+                                </div>
+                                <div class="border border-gray-200 rounded p-2 relative bg-white shadow-sm">
+                                    <div id="chart-bar-2c" style="width: 100%; height: 260px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-purple-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-plan">&#9632;</span>
+                                下周计划
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">已入库知识文档打标，明确和知识清单的对照关系。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task 3 -->
+                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden">
+                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center">
+                        <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">3</div>
+                        <h2 class="text-lg font-bold text-gray-800">任务三：构建图谱语义层</h2>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div class="w-full md:w-1/6 font-semibold text-primary text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-bg">i</span>
+                                任务背景
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-600 outline-none p-1 focus:bg-gray-50 rounded">针对智能体需求场景，设计业务本体，建立实体-关系-实体联系，打通多源知识，解决大模型幻觉与检索不准问题，赋能AI应用。</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-red-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-issue">!</span>
+                                存在问题
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">此前各领域都输出了一版三元组清单，但因总体组对图谱概念模型的认知和应用能力不够。是近期跟AC重点辅导学习的地方。4月底要重新更新整套体系方法。</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-green-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-solution">&#10003;</span>
+                                解决方案
+                            </div>
+                            <div contenteditable="true" placeholder="针对上述问题的解决方案..." class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded bg-green-50/30">请在此填写针对遗留问题的解决方案...</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-blue-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-progress">&#8599;</span>
+                                本周进展
+                            </div>
+                            <div class="w-full md:w-5/6 text-sm text-gray-800 bg-blue-50/30 rounded">
+                                <ul class="list-disc pl-5 space-y-1 p-1">
+                                    <li contenteditable="true" class="outline-none">明确图谱的意义：针对智能体需求场景，设计业务本体，建立起实体-关系-实体的联系，通过统一的语义层打通结构化数据表、非结构化文档、图数据等多源知识，解决传统RAG检索不准、大模型幻觉、输出内容不符合业务规则的核心问题，实现知识体系对AI生产级应用的全面赋能。</li>
+                                    <li contenteditable="true" class="outline-none">AC将通过培训的方式辅导图谱建立方法，并和制造域，供应链域进行基于图谱的专项沟通。</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3">
+                            <div class="w-full md:w-1/6 font-semibold text-purple-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-plan">&#9632;</span>
+                                下周计划
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">组织并完成AC图谱方法论专题培训，推进制造、供应链域的实体关系梳理共创。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task 4 -->
+                <div class="bg-white rounded-lg border-t-4 border-primary shadow-sm overflow-hidden">
+                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center">
+                        <div class="bg-primary text-white rounded-full solid-badge font-bold mr-3 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">4</div>
+                        <h2 class="text-lg font-bold text-gray-800">任务四：常态化运营与组织运营（需求清单排期）</h2>
+                    </div>
+                    <div class="p-5 space-y-6">
+                        <div class="flex flex-col md:flex-row gap-4 px-5 pt-4">
+                            <div class="w-full md:w-1/6 font-semibold text-primary text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-bg">i</span>
+                                任务背景
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-600 outline-none p-1 focus:bg-gray-50 rounded">建立可落地的长期运营机制，避免知识体系建成后无人维护、内容过时，保证体系能跟随业务发展与AI应用需求持续优化，长期可用、持续产生价值。</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 px-5">
+                            <div class="w-full md:w-1/6 font-semibold text-red-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-issue">!</span>
+                                存在问题
+                            </div>
+                            <div contenteditable="true" placeholder="运营中发现的问题..." class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">在此填写存在问题...</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 px-5">
+                            <div class="w-full md:w-1/6 font-semibold text-green-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-solution">&#10003;</span>
+                                解决方案
+                            </div>
+                            <div contenteditable="true" placeholder="针对上述问题的解决方案..." class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded bg-green-50/30">在此填写解决方案...</div>
+                        </div>
+                        <!-- S-level AI Agent Screenshot -->
+                        <div class="border-t border-gray-100 pt-5 px-5">
+                            <h3 class="text-md font-bold text-gray-700 mb-2 border-l-4 border-blue-500 pl-2">二、S级智能体知识需求进展</h3>
+                            <div id="image-upload-zone-s" class="relative w-full min-h-[160px] border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden group hide-on-capture" onclick="document.getElementById('file-upload-input-s').click()">
+                                <input type="file" id="file-upload-input-s" accept="image/*" class="hidden" onchange="handleImageUploadCommon(event, '-s')">
+                                <div id="upload-placeholder-s" class="text-center p-6 pointer-events-none">
+                                    <svg class="mx-auto h-10 w-10 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"></path></svg>
+                                    <p class="mt-2 text-sm text-gray-600">点击此处上传，或将鼠标悬停在此处 <span class="text-primary font-semibold">按下 (Ctrl+V) 粘贴</span> S级智能体报表截图</p>
+                                </div>
+                                <img id="uploaded-image-s" class="hidden w-full h-auto object-contain z-10 relative" src="" alt="S级智能体知识需求进展截图">
+                                <div id="replace-image-overlay-s" class="absolute inset-0 bg-black/10 hidden group-hover:flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity hide-on-capture">
+                                    <span class="text-white text-sm font-medium flex items-center bg-black/60 px-3 py-1.5 rounded-md shadow-sm">点击或粘贴更换截图</span>
+                                </div>
+                            </div>
+                            <img id="print-image-s" class="hidden w-full h-auto object-contain" src="" alt="S级智能体知识需求进展截图">
+                        </div>
+                        <!-- Operations Support Screenshot -->
+                        <div class="px-5 pb-2">
+                            <h3 class="text-md font-bold text-gray-700 mb-2 border-l-4 border-blue-500 pl-2">近期知识运营支持需求清单</h3>
+                            <div id="image-upload-zone" class="relative w-full min-h-[160px] border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden group hide-on-capture" onclick="document.getElementById('file-upload-input').click()">
+                                <input type="file" id="file-upload-input" accept="image/*" class="hidden" onchange="handleImageUploadCommon(event, '')">
+                                <div id="upload-placeholder" class="text-center p-6 pointer-events-none">
+                                    <svg class="mx-auto h-10 w-10 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"></path></svg>
+                                    <p class="mt-2 text-sm text-gray-600">点击此处上传，或将鼠标悬停在此处 <span class="text-primary font-semibold">按下 (Ctrl+V) 粘贴</span> 运营支持清单截图</p>
+                                </div>
+                                <img id="uploaded-image" class="hidden w-full h-auto object-contain z-10 relative" src="" alt="近期知识运营支持需求截图">
+                                <div id="replace-image-overlay" class="absolute inset-0 bg-black/10 hidden group-hover:flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity hide-on-capture">
+                                    <span class="text-white text-sm font-medium flex items-center bg-black/60 px-3 py-1.5 rounded-md shadow-sm">点击或粘贴更换截图</span>
+                                </div>
+                            </div>
+                            <img id="print-image" class="hidden w-full h-auto object-contain" src="" alt="截图内容">
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t border-gray-100 pt-3 px-5">
+                            <div class="w-full md:w-1/6 font-semibold text-purple-600 text-sm flex items-start pt-1 shrink-0">
+                                <span class="css-icon css-icon-plan">&#9632;</span>
+                                下周计划
+                            </div>
+                            <div contenteditable="true" class="w-full md:w-5/6 text-sm text-gray-800 outline-none p-1 focus:bg-gray-50 rounded">已入库知识文档打标，明确和知识清单的对照关系。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Factors A & B -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2">
+                    <div class="bg-amber-50 rounded-lg border border-amber-200 shadow-sm overflow-hidden">
+                        <div class="bg-amber-100/50 px-5 py-3 border-b border-amber-200/60 flex items-center">
+                            <div class="bg-amber-600 text-white rounded solid-badge font-bold mr-2 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">A</div>
+                            <h2 class="text-md font-bold text-amber-800">关键因素一：组织分工与权责边界</h2>
+                        </div>
+                        <div class="p-5 space-y-3">
+                            <div class="bg-white/80 rounded border border-amber-100 p-3">
+                                <h3 class="text-xs font-semibold text-amber-700 flex items-center mb-1">
+                                    <span class="css-icon css-icon-sm css-icon-bg">i</span>背景
+                                </h3>
+                                <div contenteditable="true" class="text-sm text-gray-700 outline-none focus:bg-white rounded p-1">建立三级组织架构（总体组、领域组、事业部组），明确业务方为第一责任主体。</div>
+                            </div>
+                            <div class="bg-white/80 rounded border border-amber-100 p-3">
+                                <h3 class="text-xs font-semibold text-blue-600 flex items-center mb-1">
+                                    <span class="css-icon css-icon-sm css-icon-progress">&#8599;</span>本周进展
+                                </h3>
+                                <div contenteditable="true" class="text-sm text-gray-700 outline-none focus:bg-white rounded p-1">目前营销域仅有中国区的产品营销板块有知识负责人，本周明确了品牌应用，用户运营以及营销海外的知识负责人。</div>
+                            </div>
+                            <div class="bg-white/80 rounded border border-amber-100 p-3">
+                                <h3 class="text-xs font-semibold text-purple-600 flex items-center mb-1">
+                                    <span class="css-icon css-icon-sm css-icon-plan">&#9632;</span>下周计划
+                                </h3>
+                                <div contenteditable="true" class="text-sm text-gray-700 outline-none focus:bg-white rounded p-1">明确营销域知识负责人是否全职参与知识治理的问题，并输出任命。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-50 rounded-lg border border-emerald-200 shadow-sm overflow-hidden">
+                        <div class="bg-emerald-100/50 px-5 py-3 border-b border-emerald-200/60 flex items-center">
+                            <div class="bg-emerald-600 text-white rounded solid-badge font-bold mr-2 text-sm shrink-0" style="width: 28px; height: 28px; line-height: 28px;">B</div>
+                            <h2 class="text-md font-bold text-emerald-800">关键因素二：考核与激励配套</h2>
+                        </div>
+                        <div class="p-5 space-y-3">
+                            <div class="bg-white/80 rounded border border-emerald-100 p-3">
+                                <h3 class="text-xs font-semibold text-emerald-700 flex items-center mb-1">
+                                    <span class="css-icon css-icon-sm css-icon-bg">i</span>背景
+                                </h3>
+                                <div contenteditable="true" class="text-sm text-gray-700 outline-none focus:bg-white rounded p-1">将知识准确率、覆盖率纳入绩效考核，匹配正向激励，保障长期运营活力。</div>
+                            </div>
+                            <div class="bg-white/80 rounded border border-emerald-100 p-3">
+                                <h3 class="text-xs font-semibold text-blue-600 flex items-center mb-1">
+                                    <span class="css-icon css-icon-sm css-icon-progress">&#8599;</span>本周进展
+                                </h3>
+                                <div contenteditable="true" class="text-sm text-gray-700 outline-none focus:bg-white rounded p-1">与人资、组织专家沟通未来知识相关KPI下发机制：后期需要各事业部质量管理部强参与知识治理工作，承接KPI并制定事业部考核机制。</div>
+                            </div>
+                            <div class="bg-white/80 rounded border border-emerald-100 p-3">
+                                <h3 class="text-xs font-semibold text-purple-600 flex items-center mb-1">
+                                    <span class="css-icon css-icon-sm css-icon-plan">&#9632;</span>下周计划
+                                </h3>
+                                <div contenteditable="true" class="text-sm text-gray-700 outline-none focus:bg-white rounded p-1">与各事业部数质管理部拉通事业部知识相关KPI考核问题。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="mt-10 pt-6 border-t border-gray-200 text-sm flex flex-col md:flex-row justify-between items-center gap-3">
+                <span class="text-gray-600 font-medium">工作联系人：宋冠辰 [phone_number]；卜海岭 [phone_number]；王海鑫 [phone_number]；姚毓昆 [phone_number]；王裕 [phone_number]</span>
+                <span class="text-gray-400">日期：<span id="footer-date">2026/04/03</span></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let barChart, barChartGroup, barChart2B, barChart2C;
+    let activeUploadZone = '';
+    let saveTimeout;
+
+    function handleImageUploadCommon(event, prefix) {
+        const file = event.target.files[0];
+        if (file && file.type.startsWith('image/')) { displayImageCommon(file, prefix); }
+    }
+
+    function displayImageCommon(file, prefix) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imgElement = document.getElementById('uploaded-image' + prefix);
+            const printElement = document.getElementById('print-image' + prefix);
+            imgElement.src = printElement.src = e.target.result;
+            imgElement.classList.remove('hidden');
+            document.getElementById('upload-placeholder' + prefix).classList.add('hidden');
+            document.getElementById('replace-image-overlay' + prefix).classList.remove('hidden');
+            document.getElementById('image-upload-zone' + prefix).classList.remove('min-h-[160px]');
+            triggerSaveState();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function triggerSaveState() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            const area = document.getElementById('report-capture-area');
+            if (!area) return;
+            const clone = area.cloneNode(true);
+            clone.querySelectorAll('[id^="chart-bar"]').forEach(el => { el.innerHTML = ''; el.removeAttribute('_echarts_instance_'); });
+            clone.querySelectorAll('.echarts-temp-img').forEach(el => el.remove());
+            localStorage.setItem('knowledge_report_draft', clone.innerHTML);
+            const saveStatus = document.getElementById('save-status');
+            if (saveStatus) {
+                saveStatus.innerText = "已自动保存";
+                saveStatus.classList.remove('opacity-0');
+                setTimeout(() => saveStatus.classList.add('opacity-0'), 2000);
+            }
+        }, 800);
+    }
+
+    function loadState() {
+        const savedHtml = localStorage.getItem('knowledge_report_draft');
+        if (savedHtml) { document.getElementById('report-capture-area').innerHTML = savedHtml; }
+    }
+
+    function clearCache() {
+        if (confirm("确定要清除所有缓存吗？恢复后将还原为初始数据，不可撤销。")) {
+            localStorage.removeItem('knowledge_report_draft');
+            location.reload();
+        }
+    }
+
+    function toggleDataEditor() { document.getElementById('chart-data-editor').classList.toggle('hidden'); }
+
+    function updateChartsFromTable() {
+        const updateChart = (chartInstance, tableId) => {
+            if (!chartInstance) return;
+            const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+            const labels = [], data = [];
+            rows.forEach(row => {
+                labels.push(row.cells[0].innerText.trim());
+                data.push(parseInt(row.cells[1].innerText.replace(/,/g, '')) || 0);
+            });
+            chartInstance.setOption({ yAxis: { data: labels.reverse() }, series: [{ data: data.reverse() }] });
+        };
+        updateChart(barChart, 'bar-data-table');
+        updateChart(barChartGroup, 'bar-group-data-table');
+        updateChart(barChart2B, 'bar-2b-data-table');
+        updateChart(barChart2C, 'bar-2c-data-table');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadState();
+        const d = new Date();
+        const dateEl = document.getElementById('footer-date');
+        if (dateEl && dateEl.innerText === '2026/04/03') {
+            dateEl.innerText = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        const initChart = (id, title, xData, yData, color) => {
+            const dom = document.getElementById(id);
+            if (!dom) return null;
+            const chart = echarts.init(dom);
+            chart.setOption({
+                animation: false,
+                title: { text: title, textStyle: { fontSize: 12, color: '#4b5563' }, left: 'center' },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '3%', right: '15%', bottom: '5%', top: '20%', containLabel: true },
+                xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } } },
+                yAxis: { type: 'category', data: yData, axisLabel: { fontSize: 11, width: 90, overflow: 'truncate' } },
+                series: [{ data: xData, type: 'bar', itemStyle: { color: color, borderRadius: [0, 2, 2, 0] }, barWidth: '45%', label: { show: true, position: 'right', fontSize: 10, color: '#6b7280' } }]
+            });
+            return chart;
+        };
+
+        const renderAllCharts = () => {
+            barChart = initChart('chart-bar', '领域知识库分布', [1126, 2035, 3211, 4153, 5437, 6473, 23831], ['数质中心IT产品', 'Global Service', 'Global Product', '研发知识库', '制造知识库', '人资知识库', '产品知识库'], '#0f766e');
+            barChartGroup = initChart('chart-bar-group', '集团知识贡献 (TOP 5)', [340, 358, 5070, 7084, 9566], ['研发管理部', '财务中心', '全球营销中心', '数质中心', '人资行政中心'], '#14b8a6');
+            barChart2B = initChart('chart-bar-2b', 'ToB事业部知识贡献 (TOP 5)', [504, 708, 1029, 2752, 15317], ['生态公司', '乾照光电', '智慧楼宇', '商用空调', '海信日立'], '#3b82f6');
+            barChart2C = initChart('chart-bar-2c', 'ToC事业部知识贡献 (TOP 5)', [2850, 2983, 3061, 5037, 6224], ['显示事业部', '洗护事业部', '冰冷事业部', '空调事业部', '厨电事业部'], '#f59e0b');
+            updateChartsFromTable();
+        };
+        renderAllCharts();
+
+        window.addEventListener('resize', () => {
+            [barChart, barChartGroup, barChart2B, barChart2C].forEach(c => c && c.resize());
+        });
+
+        document.getElementById('report-capture-area').addEventListener('input', triggerSaveState);
+        document.getElementById('chart-data-editor')?.addEventListener('input', updateChartsFromTable);
+
+        const zoneS = document.getElementById('image-upload-zone-s');
+        const zoneSupport = document.getElementById('image-upload-zone');
+        if (zoneS) zoneS.addEventListener('mouseenter', () => activeUploadZone = '-s');
+        if (zoneSupport) zoneSupport.addEventListener('mouseenter', () => activeUploadZone = '');
+
+        document.addEventListener('paste', function(e) {
+            const tableEditor = e.target.closest('#chart-data-editor table');
+            if (tableEditor && e.target.closest('td[contenteditable="true"]')) {
+                e.preventDefault();
+                const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                if (!text) return;
+                const rows = text.split(/\r\n|\n|\r/).filter(r => r.trim());
+                let currentCell = e.target.closest('td');
+                let currentRow = currentCell.closest('tr');
+                let tbody = currentRow.closest('tbody');
+                let startColIndex = Array.from(currentRow.children).indexOf(currentCell);
+                let startRowIndex = Array.from(tbody.children).indexOf(currentRow);
+                rows.forEach((rowData, i) => {
+                    let cols = rowData.split('\t');
+                    let targetRow = tbody.children[startRowIndex + i];
+                    if (!targetRow) {
+                        targetRow = tbody.children[0].cloneNode(true);
+                        Array.from(targetRow.children).forEach(c => c.innerText = '');
+                        tbody.appendChild(targetRow);
+                    }
+                    cols.forEach((colData, j) => {
+                        let targetCell = targetRow.children[startColIndex + j];
+                        if (targetCell && targetCell.getAttribute('contenteditable') === 'true') {
+                            targetCell.innerText = colData.trim();
+                        }
+                    });
+                });
+                updateChartsFromTable();
+                triggerSaveState();
+                return;
+            }
+            const items = (e.clipboardData || window.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    displayImageCommon(items[i].getAsFile(), activeUploadZone);
+                    e.preventDefault();
+                    break;
+                }
+            }
+        });
+    });
+
+    async function captureReport() {
+        if (typeof html2canvas === 'undefined') { alert("截图插件加载失败，请检查网络后刷新页面。"); return; }
+        const element = document.getElementById('report-capture-area');
+        const saveStatus = document.getElementById('save-status');
+        const dataEditor = document.getElementById('chart-data-editor');
+        if (dataEditor) dataEditor.classList.add('hidden');
+
+        const handleImagePrint = (uploadId, printId) => {
+            const printImg = document.getElementById(printId);
+            const uploadedImg = document.getElementById(uploadId);
+            const zone = document.getElementById(uploadId.replace('uploaded-image', 'image-upload-zone'));
+            if (uploadedImg && uploadedImg.src && uploadedImg.src !== window.location.href) {
+                if (zone) zone.classList.add('hidden');
+                if (printImg) printImg.classList.remove('hidden');
+            }
+        };
+        handleImagePrint('uploaded-image', 'print-image');
+        handleImagePrint('uploaded-image-s', 'print-image-s');
+
+        document.querySelectorAll('.animate-pulse').forEach(el => {
+            el.classList.remove('animate-pulse', 'capture-remove-pulse');
+        });
+
+        const echartContainers = ['chart-bar', 'chart-bar-group', 'chart-bar-2b', 'chart-bar-2c'];
+        echartContainers.forEach(id => {
+            const chartDiv = document.getElementById(id);
+            if (chartDiv) {
+                const chartInstance = echarts.getInstanceByDom(chartDiv);
+                if (chartInstance) {
+                    const img = new Image();
+                    img.src = chartInstance.getDataURL({ pixelRatio: 2, backgroundColor: '#ffffff' });
+                    img.className = 'echarts-temp-img absolute top-0 left-0 w-full h-full object-contain z-10';
+                    chartDiv.appendChild(img);
+                }
+            }
+        });
+
+        const originalStyle = element.getAttribute('style') || '';
+        element.style.width = '1200px';
+        element.style.maxWidth = '1200px';
+        document.body.classList.add('is-capturing');
+        element.classList.add('is-capturing');
+
+        if (saveStatus) {
+            saveStatus.innerText = "锁定画面截取中...";
+            saveStatus.className = "text-sm text-primary font-bold";
+        }
+
+        const originalScrollY = window.scrollY;
+        window.scrollTo(0, 0);
+
+        try {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            const canvas = await html2canvas(element, {
+                scale: 2, useCORS: true, backgroundColor: '#ffffff',
+                windowWidth: 1200, scrollY: 0, logging: false
+            });
+
+            document.body.classList.remove('is-capturing');
+            element.classList.remove('is-capturing');
+            element.setAttribute('style', originalStyle);
+            document.querySelectorAll('.echarts-temp-img').forEach(img => img.remove());
+            document.querySelectorAll('.capture-remove-pulse').forEach(el => el.classList.add('animate-pulse'));
+            window.scrollTo(0, originalScrollY);
+
+            const restoreImageZone = (uploadId, printId) => {
+                const printImg = document.getElementById(printId);
+                const uploadedImg = document.getElementById(uploadId);
+                const zone = document.getElementById(uploadId.replace('uploaded-image', 'image-upload-zone'));
+                if (uploadedImg && uploadedImg.src && uploadedImg.src !== window.location.href) {
+                    if (zone) zone.classList.remove('hidden');
+                    if (printImg) printImg.classList.add('hidden');
+                }
+            };
+            restoreImageZone('uploaded-image', 'print-image');
+            restoreImageZone('uploaded-image-s', 'print-image-s');
+
+            const link = document.createElement('a');
+            const dd = new Date();
+            const dateString = `${dd.getFullYear()}${String(dd.getMonth()+1).padStart(2, '0')}${String(dd.getDate()).padStart(2, '0')}`;
+            link.download = `集团知识治理项目周报_${dateString}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+
+            if (saveStatus) {
+                saveStatus.innerText = "生成成功！长图已下载。";
+                saveStatus.className = "text-sm text-green-600 transition-opacity duration-300";
+                setTimeout(() => saveStatus.classList.add('opacity-0'), 4000);
+            }
+        } catch (e) {
+            console.error("生成截图失败:", e);
+            if (saveStatus) {
+                saveStatus.innerText = "生成失败，请刷新重试";
+                saveStatus.className = "text-sm text-red-600 transition-opacity duration-300";
+            }
+            document.body.classList.remove('is-capturing');
+            element.classList.remove('is-capturing');
+            element.setAttribute('style', originalStyle);
+            document.querySelectorAll('.echarts-temp-img').forEach(img => img.remove());
+            document.querySelectorAll('.capture-remove-pulse').forEach(el => el.classList.add('animate-pulse'));
+            window.scrollTo(0, originalScrollY);
+        }
+    }
+    </script>
+</body>
+</html>
