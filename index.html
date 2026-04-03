@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>集团知识治理项目周报</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.5/dist/dom-to-image-more.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.snow.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.min.js"></script>
@@ -523,8 +523,31 @@
     }
 
     function loadState() {
+        // Only restore editable text content, not the full DOM structure.
+        // This prevents cached HTML from overwriting new structural elements (like toggle buttons).
         const savedHtml = localStorage.getItem('knowledge_report_draft');
-        if (savedHtml) { document.getElementById('report-capture-area').innerHTML = savedHtml; }
+        if (!savedHtml) return;
+        const parser = new DOMParser();
+        const savedDoc = parser.parseFromString('<div>' + savedHtml + '</div>', 'text/html');
+        const savedEditables = savedDoc.querySelectorAll('[contenteditable="true"]');
+        const currentEditables = document.querySelectorAll('#report-capture-area [contenteditable="true"]');
+        // Match by index and restore text
+        const len = Math.min(savedEditables.length, currentEditables.length);
+        for (let i = 0; i < len; i++) {
+            currentEditables[i].innerHTML = savedEditables[i].innerHTML;
+        }
+        // Restore uploaded images
+        ['', '-s'].forEach(suffix => {
+            const savedImg = savedDoc.querySelector('#uploaded-image' + suffix);
+            const currentImg = document.getElementById('uploaded-image' + suffix);
+            const printImg = document.getElementById('print-image' + suffix);
+            if (savedImg && currentImg && savedImg.src && !savedImg.src.endsWith('/')) {
+                currentImg.src = printImg.src = savedImg.src;
+                currentImg.classList.remove('hidden');
+                const placeholder = document.getElementById('upload-placeholder' + suffix);
+                if (placeholder) placeholder.classList.add('hidden');
+            }
+        });
     }
 
     function clearCache() {
@@ -649,7 +672,7 @@
     });
 
     async function captureReport() {
-        if (typeof domtoimage === 'undefined') { alert("截图插件加载失败，请检查网络后刷新页面。"); return; }
+        if (typeof html2canvas === 'undefined') { alert("截图插件加载失败，请检查网络后刷新页面。"); return; }
         const element = document.getElementById('report-capture-area');
         const saveStatus = document.getElementById('save-status');
         const dataEditor = document.getElementById('chart-data-editor');
@@ -700,13 +723,10 @@
         window.scrollTo(0, 0);
 
         try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const dataUrl = await domtoimage.toPng(element, {
-                width: 1200,
-                height: element.scrollHeight,
-                style: { transform: 'none', overflow: 'visible' },
-                quality: 1,
-                bgcolor: '#ffffff'
+            await new Promise(resolve => setTimeout(resolve, 800));
+            const canvas = await html2canvas(element, {
+                scale: 2, useCORS: true, backgroundColor: '#ffffff',
+                windowWidth: 1200, scrollY: 0, logging: false
             });
 
             document.body.classList.remove('is-capturing');
@@ -732,7 +752,7 @@
             const dd = new Date();
             const dateString = `${dd.getFullYear()}${String(dd.getMonth()+1).padStart(2, '0')}${String(dd.getDate()).padStart(2, '0')}`;
             link.download = `集团知识治理项目周报_${dateString}.png`;
-            link.href = dataUrl;
+            link.href = canvas.toDataURL("image/png");
             link.click();
 
             if (saveStatus) {
