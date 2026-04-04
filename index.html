@@ -60,6 +60,8 @@
         <div class="flex items-center space-x-3">
             <span id="save-status" class="text-xs font-medium text-gray-400 transition-opacity duration-300">内容已自动保存</span>
             <button onclick="clearCache()" class="text-gray-500 hover:text-red-500 text-xs px-2 py-1 underline transition-colors">清除重置</button>
+            <button onclick="cloudSave()" id="btn-cloud-save" class="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-md text-sm font-bold transition-colors shadow-md focus:outline-none">☁ 云端保存</button>
+            <button onclick="copyShareLink()" id="btn-copy-link" class="hidden flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2.5 rounded-md text-xs font-bold transition-colors shadow-md focus:outline-none">复制分享链接</button>
             <button onclick="captureReport()" class="flex items-center bg-primary hover:bg-teal-900 text-white px-5 py-2.5 rounded-md text-sm font-bold transition-colors shadow-md hover:shadow-lg focus:outline-none">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                 一键生成报告长图
@@ -567,6 +569,93 @@
         triggerSaveState();
     }
 
+    // ========== Cloud Save/Load via jsonblob.com ==========
+    let currentBlobId = null;
+
+    function collectData() {
+        const editables = document.querySelectorAll('#report-capture-area [contenteditable="true"]');
+        const texts = Array.from(editables).map(el => el.innerHTML);
+        const hiddenTasks = [];
+        document.querySelectorAll('.task-hide-issues').forEach(el => { if (el.id) hiddenTasks.push(el.id); });
+        return { texts, hiddenTasks, version: 2 };
+    }
+
+    function applyData(data) {
+        if (!data || !data.texts) return;
+        const editables = document.querySelectorAll('#report-capture-area [contenteditable="true"]');
+        const len = Math.min(data.texts.length, editables.length);
+        for (let i = 0; i < len; i++) { editables[i].innerHTML = data.texts[i]; }
+        if (data.hiddenTasks) {
+            data.hiddenTasks.forEach(id => {
+                const task = document.getElementById(id);
+                if (task) {
+                    task.classList.add('task-hide-issues');
+                    const btn = task.querySelector('button[onclick*="toggleTaskIssue"]');
+                    if (btn) btn.innerText = '显示问题/方案';
+                }
+            });
+        }
+        updateChartsFromTable();
+    }
+
+    async function cloudSave() {
+        const btn = document.getElementById('btn-cloud-save');
+        const status = document.getElementById('save-status');
+        btn.innerText = '保存中...'; btn.disabled = true;
+        try {
+            const payload = JSON.stringify(collectData());
+            let res;
+            if (currentBlobId) {
+                res = await fetch('https://jsonblob.com/api/jsonBlob/' + currentBlobId, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: payload
+                });
+            } else {
+                res = await fetch('https://jsonblob.com/api/jsonBlob', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload
+                });
+            }
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            if (!currentBlobId) {
+                const loc = res.headers.get('Location') || '';
+                currentBlobId = loc.split('/').pop();
+            }
+            const shareUrl = window.location.origin + window.location.pathname + '?blob=' + currentBlobId;
+            document.getElementById('btn-copy-link').classList.remove('hidden');
+            document.getElementById('btn-copy-link').setAttribute('data-url', shareUrl);
+            if (status) { status.innerText = '已保存到云端'; status.classList.remove('opacity-0'); setTimeout(() => status.classList.add('opacity-0'), 3000); }
+        } catch (e) {
+            console.error('云端保存失败:', e);
+            if (status) { status.innerText = '云端保存失败'; status.className = 'text-xs font-medium text-red-500'; }
+        }
+        btn.innerText = '☁ 云端保存'; btn.disabled = false;
+    }
+
+    async function cloudLoad(blobId) {
+        try {
+            const res = await fetch('https://jsonblob.com/api/jsonBlob/' + blobId);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            applyData(data);
+            currentBlobId = blobId;
+            const shareUrl = window.location.origin + window.location.pathname + '?blob=' + blobId;
+            document.getElementById('btn-copy-link').classList.remove('hidden');
+            document.getElementById('btn-copy-link').setAttribute('data-url', shareUrl);
+            const status = document.getElementById('save-status');
+            if (status) { status.innerText = '已从云端加载'; status.classList.remove('opacity-0'); setTimeout(() => status.classList.add('opacity-0'), 3000); }
+        } catch (e) {
+            console.error('云端加载失败:', e);
+        }
+    }
+
+    function copyShareLink() {
+        const url = document.getElementById('btn-copy-link').getAttribute('data-url');
+        if (!url) return;
+        navigator.clipboard.writeText(url).then(() => {
+            const status = document.getElementById('save-status');
+            if (status) { status.innerText = '分享链接已复制'; status.classList.remove('opacity-0'); setTimeout(() => status.classList.add('opacity-0'), 3000); }
+        });
+    }
+
     function updateChartsFromTable() {
         const updateChart = (chartInstance, tableId) => {
             if (!chartInstance) return;
@@ -585,7 +674,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        loadState();
+        // Check URL for cloud blob ID first; if present, load from cloud instead of localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const blobId = urlParams.get('blob');
+        if (blobId) {
+            // Load from cloud after charts are ready
+            setTimeout(() => cloudLoad(blobId), 500);
+        } else {
+            loadState();
+        }
         const d = new Date();
         const dateEl = document.getElementById('footer-date');
         if (dateEl && dateEl.innerText === '2026/04/03') {
